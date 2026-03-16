@@ -13,7 +13,7 @@
  */
 
 class HighlightRecentLogs extends WireData implements Module {
-	
+
 	public static function getModuleInfo() {
 		return array(
 			'title'     => 'Highlights very recently changed logs on the logs list page',
@@ -28,21 +28,23 @@ class HighlightRecentLogs extends WireData implements Module {
 
     public function init(){
         $this->addHookAfter('ProcessLogger::execute', function($event){
-                
+
             /** @var MarkupAdminDataTable $table */
-            $table = $this->wire('modules')->get('MarkupAdminDataTable'); 
+            $table = $this->wire('modules')->get('MarkupAdminDataTable');
             $table->setEncodeEntities(false);
             $table->headerRow(array(
                 $this->_x('Name', 'th'),
-                $this->_x('Modified', 'th'), 
-                $this->_x('Entries', 'th'), 
+                $this->_x('Modified', 'th'),
+                $this->_x('Entries', 'th'),
                 $this->_x('Size', 'th'),
             ));
-            
+
             $logs = $this->wire()->log->getLogs();
+            // artfulrobot patch: sort by modified time.
+            uasort($logs, fn($a, $b) => $b['modified'] <=> $a['modified']);
 
             foreach($logs as $log) {
-                
+
                 // add highlight
                 $now = time();
                 $logModified = $log['modified'];
@@ -62,7 +64,7 @@ class HighlightRecentLogs extends WireData implements Module {
                 if(ctype_digit($logName)) $logName = " $logName";
                 $table->row(
                     array(
-                        $logName => "./view/$log[name]/", 
+                        $logName => "./view/$log[name]/",
                         "<span style='font-size: 0;'>{$logModified} </span>" . wireRelativeTimeStr($logModified),
                         $this->wire()->log->getTotalEntries($log['name']),
                         "<span style='font-size: 0;'>$log[size] </span>" . wireBytesStr($log['size'])
@@ -70,13 +72,13 @@ class HighlightRecentLogs extends WireData implements Module {
                     array("class"=>$class)
                 );
             }
-            $cnt = count($logs); 
-            $out = 
-                "<h2><i class='fa fa-lg fa-fw fa-tree'></i> " . sprintf($this->_n('%d log', '%d logs', $cnt), $cnt) . "</h2>" . 
-                $table->render() . 
-                "<p>" . 
-                "<span class='detail'>" . $this->_('Create or add to log file from the API:') . "</span><br />" . 
-                "<code class='notes'>wire('log')->save('name', 'entry text');</code>" . 
+            $cnt = count($logs);
+            $out =
+                "<h2><i class='fa fa-lg fa-fw fa-tree'></i> " . sprintf($this->_n('%d log', '%d logs', $cnt), $cnt) . "</h2>" .
+                $table->render() .
+                "<p>" .
+                "<span class='detail'>" . $this->_('Create or add to log file from the API:') . "</span><br />" .
+                "<code class='notes'>wire('log')->save('name', 'entry text');</code>" .
                 "</p>";
 
             $out .= "
@@ -106,5 +108,5 @@ class HighlightRecentLogs extends WireData implements Module {
 
             $event->return = $out;
         });
-    } 
+    }
 }
