@@ -40,6 +40,7 @@ class HighlightRecentLogs extends WireData implements Module {
             ));
             
             $logs = $this->wire()->log->getLogs();
+            uasort($logs, fn($a, $b) => $b['modified'] <=> $a['modified']);
 
             foreach($logs as $log) {
                 
